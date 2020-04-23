@@ -1,5 +1,6 @@
 library(fda)
 library(orthopolynom)
+library(pracma)
 source('basisfd.R')
 source('create.hermite.basis.R')
 source('hermite.R')
@@ -26,34 +27,31 @@ assign("eval.penalty", eval.penalty, getNamespace('fda'))
 dat = read.csv(
   '../COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
 )
-
-dates = seq(as.Date("2020/01/22"), by='day', length.out = dim(dat)[2]-4)
-yy = get_country_data('Lithuania', dat)
-y = c(rev(yy), yy)
-#y = yy
-dates_x = c(rev(dates), dates)
+y = get_country_data('Lithuania', dat)
+y = y[y>0]
+plot(y, type='l')
+y = c(rev(y), y)
 plot(y, type='l')
 
-x = seq(-2, 2, length.out = length(y))
+min_x = -2
+max_x = 2
+x = seq(min_x, max_x, length.out = length(y))
 min_x = min(x)
 max_x = max(x)
-basis_count = 8
+basisobj <- create.hermite.basis(rangeval=c(min_x, max_x), nbasis=5)
+plot(basisobj)
+fdobj <- smooth.basis(x, y, basisobj)
 
-basisobj <- create.hermite.basis(c(min_x, max_x), nbasis=basis_count)
-par(mfrow=c(1,1))
-plot(basisobj, main='Bazines funkcijos')
-
-fdobj = smooth.basis(x, y, basisobj)
 plot(fdobj)
-lines(x, y, lty=2, col='red')
+lines(x, y, col='red')
 
-future_days = 30
-future_dates = seq(as.Date("2020/01/22"), by='day', length.out = dim(dat)[2]-4+future_days)
-xx = seq(0, max_x+ max_x/length(dates)*future_days, length.out=length(future_dates))
+fx = -4.5
+tx = 4.5
+x_hat = seq(fx, tx, length.out = length(y))
+fdobj$fd$basis$rangeval = c(fx, tx)
+y_hat = eval.fd(x_hat, fdobj$fd)
+plot(x_hat, y_hat, type='l')
+lines(x, y, col='red', type='p')
 
-basisval = eval.basis(xx, basisobj)
-coefs = fdobj$fd$coefs
-yfn = basisval %*% coefs
 
-plot(xx, yfn, type='l')
-lines(seq(0,max_x, length.out=length(dates)), yy, lty=2, col='red', type='p')
+
