@@ -1,5 +1,6 @@
 library(fda)
 library(orthopolynom)
+library(pracma)
 source('basisfd.R')
 source('create.hermite.basis.R')
 source('hermite.R')
@@ -27,33 +28,55 @@ dat = read.csv(
   '../COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
 )
 
-dates = seq(as.Date("2020/01/22"), by='day', length.out = dim(dat)[2]-4)
-yy = get_country_data('Lithuania', dat)
-y = c(rev(yy), yy)
-#y = yy
-dates_x = c(rev(dates), dates)
-plot(y, type='l')
+colnames(dat)
+header <- colnames(dat)
+dates_str <- header[5:length(header)]
+dates_str = gsub('X', '', dates_str)
+dates = as.Date(dates_str, format="%m.%d.%y")
 
-x = seq(-2, 2, length.out = length(y))
+y_full = get_country_data('Lithuania', dat)
+dates = dates[y_full>0]
+y = y_full[y_full>0]
+y_pos = y
+
+plot(dates, y, type='l')
+y = c(rev(y), y)
+symetric_dates = c(rev(dates), dates)
+plot(symetric_dates, y, type='l')
+
+min_x = -2
+max_x = 2
+date_step = length(dates)/max_x
+
+x = seq(min_x, max_x, length.out = length(y))
 min_x = min(x)
 max_x = max(x)
-basis_count = 8
+basisobj <- create.hermite.basis(rangeval=c(min_x, max_x), nbasis=5)
+plot(basisobj)
+fdobj <- smooth.basis(x, y, basisobj)
 
-basisobj <- create.hermite.basis(c(min_x, max_x), nbasis=basis_count)
-par(mfrow=c(1,1))
-plot(basisobj, main='Bazines funkcijos')
-
-fdobj = smooth.basis(x, y, basisobj)
 plot(fdobj)
-lines(x, y, lty=2, col='red')
+lines(x, y, col='red')
 
-future_days = 30
-future_dates = seq(as.Date("2020/01/22"), by='day', length.out = dim(dat)[2]-4+future_days)
-xx = seq(0, max_x+ max_x/length(dates)*future_days, length.out=length(future_dates))
+tx = 3.3
+fx = -1*tx
+x_hat = seq(fx, tx, length.out = length(y))
+fdobj$fd$basis$rangeval = c(fx, tx)
+y_hat = eval.fd(x_hat, fdobj$fd)
+plot(x_hat, y_hat, type='l')
+lines(x, y, col='red', type='p')
 
-basisval = eval.basis(xx, basisobj)
-coefs = fdobj$fd$coefs
-yfn = basisval %*% coefs
 
-plot(xx, yfn, type='l')
-lines(seq(0,max_x, length.out=length(dates)), yy, lty=2, col='red', type='p')
+to_date = dates[1] + date_step*tx
+
+x_hat = seq(0, tx, length.out = length(y))
+y_hat = eval.fd(x_hat, fdobj$fd)
+
+ext_dates = seq(dates[1],to=to_date, along.with = x_hat)
+par(mar=c(3,3.8,2.3,1))
+plot(ext_dates, y_hat, type='l', 
+     main='Lithuania', xlab='Time', ylab='Confirmed', 
+     cex.main=0.8, cex.lab=0.6, cex.axis=0.7, las=1, col='blue')
+lines(dates, y_pos, col='red', type='l', pch=20)
+abline(v=Sys.Date(), col='gray')
+
