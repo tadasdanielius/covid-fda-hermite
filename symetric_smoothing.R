@@ -1,38 +1,8 @@
-library(fda)
-library(orthopolynom)
-library(pracma)
-source('basisfd.R')
-source('create.hermite.basis.R')
-source('hermite.R')
-source('getbasismat.R')
-source('hermitepen.R')
-source('eval.penalty.R')
+source('common.R')
 
-get_country_data <- function(country, dat) {
-  y = dat[dat['Country.Region'] == country]
-  as.numeric(y[5:length(y)])
-}
-
-
-unlockBinding("getbasismatrix", getNamespace('fda'))
-assign("getbasismatrix", getbasismatrix, getNamespace('fda'))
-
-unlockBinding("basisfd", getNamespace('fda'))
-assign("basisfd", basisfd, getNamespace('fda'))
-
-unlockBinding("eval.penalty", getNamespace('fda'))
-assign("eval.penalty", eval.penalty, getNamespace('fda'))
-
-#nuskaitymas
-dat = read.csv(
-  '../COVID-19/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
-)
-
-colnames(dat)
-header <- colnames(dat)
-dates_str <- header[5:length(header)]
-dates_str = gsub('X', '', dates_str)
-dates = as.Date(dates_str, format="%m.%d.%y")
+loaded_csv <- load_data()
+dat = loaded_csv$dat
+dates = loaded_csv$dates
 
 y_full = get_country_data('Lithuania', dat)
 dates = dates[y_full>0]
@@ -76,7 +46,7 @@ ext_dates = seq(dates[1],to=to_date, along.with = x_hat)
 par(mar=c(3,3.8,2.3,1))
 plot(ext_dates, y_hat, type='l', 
      main='Lithuania', xlab='Time', ylab='Confirmed', 
-     cex.main=0.8, cex.lab=0.6, cex.axis=0.7, las=1, col='blue')
+     cex.main=0.8, cex.lab=0.6, cex.axis=0.7, las=1, col='blue', ylim=c(0, max(y_hat)))
 lines(dates, y_pos, col='red', type='l', pch=20)
 abline(v=Sys.Date(), col='gray')
 
