@@ -47,7 +47,7 @@ smooth.hermite <- function(dat, nbasis=5, rangeval=c(-2, 2)) {
   }
   return(fdobj)
 }
-
+library(fda.usc)
 cases_per_pop = 100000
 min_pop = 500000
 
@@ -67,10 +67,13 @@ pop_dat <- pop_dat[pop_dat$Population > min_pop, ]
 pop_dat = pop_dat[complete.cases(pop_dat), ]
 normalized = pop_dat[, 7:dim(pop_dat)[2] ] * (cases_per_pop/pop_dat$Population)
 
+rvals = c(-10, 10)
+
 lt_data = as.vector(t(normalized[which(pop_dat$Combined_Key == 'Lithuania'),]))
-basisobj <- create.hermite.basis(rangeval=c(1,length(lt_data)), nbasis=5)
-basisobj <- create.hermite.basis(rangeval=c(-10,10), nbasis=5)
+#basisobj <- create.hermite.basis(rangeval=c(1,length(lt_data)), nbasis=5)
+basisobj <- create.hermite.basis(rangeval=rvals, nbasis=5)
 plot(basisobj)
 lt.fd = Data2fd(lt_data, basisobj = basisobj)
-plot(lt.fd)
-lines(lt_data, col='blue')
+plot(lt.fd, main='Lithuania')
+x = seq(rvals[1], rvals[2], length.out = length(lt_data))
+lines(x, lt_data, col='blue')
