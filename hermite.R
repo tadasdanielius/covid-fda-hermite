@@ -13,6 +13,7 @@ hermite <- function(x, nbasis=3, nderiv = 0) {
   fn = polynomial.functions(polynoms)
   for (i in 1:nbasis) {
     basismat[,i] = fn[[i]](x)
+    #basismat[basismat[,i] < 0,i] = 0
   }
   dimnames(basismat) <- list(xNames, fNames)
   basismat
