@@ -1,6 +1,6 @@
 
 
-source('pop_norm_data.R')
+source('jhu_data.R')
 
 smooth.row <- function(row, basisobj) {
   country_dat = t(row)
