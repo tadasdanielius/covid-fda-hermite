@@ -74,18 +74,3 @@ rownames(normalized) <- trimws(paste(pop_dat$Country.Region, pop_dat$Province.St
 all_date <- as.Date(matrix(unlist(strsplit(colnames(normalized), "X")), ncol=2, byrow=T)[,2], format="%m.%d.%y")
 colnames(normalized) <- all_date
 
-
-
-m = matrix(c(0,0,0,6,0,7,1,8,2,9,3,10), ncol=6)
-values = 3
-
-fn(m[2,])
-apply(m, 2, fn)
-m[1, 3:6]
-mat_cut = c()
-for(x in 1:nrow(m)) {
-  mat_cut = rbind(mat_cut,fn(m[x,]))
-}
-mat_cut
-nrow(m)
-m
