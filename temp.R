@@ -1,6 +1,3 @@
-source('common.R')
-
-
 # Function will select rows only where we have "less than" days with zero.
 # The point is to get rid of Countries where first case starts long after others
 # Number of allowed zeros are specified in threshold argument 
@@ -21,6 +18,7 @@ select_non_zero_subset = function(dat, threshold, tail_cut=T) {
     return(x[start_pos:end_pos])
   }
   
+  #dat = normalized
   dat_col_len = dim(dat)[2]
   x = apply(dat, 1, function(x) sum(x == 0))
   ratios = (dat_col_len - x)/dat_col_len
@@ -32,60 +30,29 @@ select_non_zero_subset = function(dat, threshold, tail_cut=T) {
   max_zeros = max(x)
   
   if (tail_cut == T) {
-    s_rnames <- rownames(selected)
-    rownames(selected) <- 1:nrow(selected)
     values = ncol(selected) - max_zeros
     mat_cut = c()
     for(i in 1:nrow(selected)) {
+      print(selected[i, ])
       z = fn(selected[i,], values)
-      colnames(z) <- 1:length(z)
+      colnames(z) <- NULL
+      print(z)
       mat_cut = rbind(mat_cut,z)
     }
     selected = mat_cut
-    rownames(selected) <- s_rnames
   } else {
-    selected = selected[, max_zeros:ncol(dat)]
+    selected = dat[, max_zeros:data_col_len]
   }
   return(selected)  
 }
 
+select_non_zero_subset(normalized, 0.95)
 
-
-cases_per_pop = 100000
-min_pop = 500000
-
-loaded_csv <- load_data()
-dat = loaded_csv$dat
-dates = loaded_csv$dates
-
-pop <- read.csv('../COVID-19/csse_covid_19_data/UID_ISO_FIPS_LookUp_Table.csv')
-pop <- pop[c("Province_State", "Country_Region", "Combined_Key", "Population")]
-
-colnames(pop) <- c("Province.State", "Country.Region", "Combined_Key", "Population")
-pop_dat <- merge(pop,dat,by=c("Country.Region",  "Province.State"))
-
-# Filter out Countries with small pop
-pop_dat <- pop_dat[pop_dat$Population > min_pop, ]
-
-pop_dat = pop_dat[complete.cases(pop_dat), ]
-normalized = pop_dat[, 7:dim(pop_dat)[2] ] * (cases_per_pop/pop_dat$Population)
-
-rownames(normalized) <- trimws(paste(pop_dat$Country.Region, pop_dat$Province.State),"r")
-all_date <- as.Date(matrix(unlist(strsplit(colnames(normalized), "X")), ncol=2, byrow=T)[,2], format="%m.%d.%y")
-colnames(normalized) <- all_date
-
-
-
-m = matrix(c(0,0,0,6,0,7,1,8,2,9,3,10), ncol=6)
-values = 3
-
-fn(m[2,])
-apply(m, 2, fn)
-m[1, 3:6]
-mat_cut = c()
-for(x in 1:nrow(m)) {
-  mat_cut = rbind(mat_cut,fn(m[x,]))
-}
-mat_cut
-nrow(m)
-m
+# dat = normalized
+# 
+# x = apply(dat, 1, function(x) sum(x == 0))
+# ratios = (dat_col_len - x)/dat_col_len
+# threshold=1
+# selected = dat[ratios >= threshold,]
+# length(x)
+# max(x)
