@@ -1,5 +1,11 @@
+<<<<<<< HEAD
 source('common.R')
 source('pop_norm_data.R')
+=======
+
+
+source('jhu_data.R')
+>>>>>>> a115040fe342e9b9202fc6fd4d370c0c2ea06554
 
 smooth.row <- function(row, basisobj) {
   country_dat = t(row)
