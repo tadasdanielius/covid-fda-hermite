@@ -90,79 +90,21 @@ fboxplot(cov_fts, type="hdr")
 
 
 
-# ---- find exp growth ----
-c_id = 'Germany'
-
-sub_x = x
-
-f1 = deriv.fd(cov_fd[c_id])
-y_deriv = eval.fd(sub_x, f1)
-d_pvar = pvar(y_deriv, 1.01)
-plot(d_pvar)
-
-part_values = head(y_deriv[d_pvar$partition], -1)
-part_max_idx = which.max(part_values)
-
-max_idx = d_pvar$partition[part_max_idx+1]
-prev_max_idx = d_pvar$partition[part_max_idx-1]
-
-max_val = y_deriv[max_idx]
-prev_max_val = y_deriv[prev_max_idx]
-point_count = max_idx - prev_max_idx
-xx = seq(prev_max_idx, max_idx)
-yy = y_deriv[xx]
-
-plot(y_deriv, type='l')
-lines(xx, yy, col='red', lwd=3)
-
-cov_y = eval.fd(x, cov_fd[c_id])
-cov_min_val = cov_y[prev_max_idx]
-cov_max_val = cov_y[max_idx]
-f_grow_y = seq(cov_min_val, cov_max_val, length.out = length(xx))
-plot(cov_y, type='l')
-lines(xx, cov_y[xx], col='red', lwd=3)
-lines(xx, f_grow_y, col='blue')
-
-lines(y_deriv, col='gray')
-
-
-cov_yn = cov_y/max(cov_y)
-dcov_yn = y_deriv/max(y_deriv)
-line_yn = f_grow_y/max(cov_y)
-plot(cov_yn, type='l', ylim=c(-1, 1))
-lines(dcov_yn, col='gray')
-lines(xx, line_yn, col='blue')
-lines(xx, cov_yn[xx], col='red', lwd=3)
-
-cov_d2 = deriv.fd(cov_fd[c_id], 2)
-cov_d2 = eval.fd(sub_x, cov_d2)
-cov_d2 = cov_d2/max(cov_d2)
-lines(cov_d2, col='green')
-
-
-
-# -- Search for second wave
-
-# Starting position is the last point of previous wave
-sub_x = x[max(xx):length(x)]
-sf1 = deriv.fd(cov_fd[c_id])
-yd1 = eval.fd(sub_x, sf1)
-plot(f1)
-lines(sub_x, yd1, col='green')
-
-d_pvar1 = pvar(yd1, 1.01)
-head(y_deriv[d_pvar1$partition], -1)
-
-all_x = x
-f = cov_fd['Lithuania']
+# ---- find growth waves ----
 
 
 find_waves = function(x, f) {
-  is_wave = function(p) {
+  is_wave = function(values, ppoints, x) {
+    p = values[ppoints]
     p1 = p[1]
     p2 = p[2]
     p3 = p[3]
-    return(p1 < p2 & p2 > p3)
+    is_w = (p1 < p2 & p2 > p3)
+    # we may need certain rules to define if it is really fast grow
+    form = (p3-p1)/ (ppoints[3]-ppoints[1])
+    return(list(
+      wave=is_w, form=form, x=x[ppoints[1]:ppoints[3]]
+    ))
   }
   waves = list()
   d = deriv.fd(f)
@@ -173,17 +115,38 @@ find_waves = function(x, f) {
     return(waves)
   }
   if (length(partition_points) == 3) {
-    pts = d_vals[partition_points]
-    if (is_wave(pts)) {
-      waves[[1]] = x[partition_points[(i-2)]:partition_points[i]]
+    pts = partition_points
+    curve_details = is_wave(d_vals, pts, x)
+    if (curve_details$wave) {
+      waves[[1]] = curve_details
     }
     return(waves)
   }
   for (i in 3:length(partition_points)) {
-    pts = d_vals[partition_points[(i-2):i]]
-    if (is_wave(pts)) {
-      waves[[length(waves)+1]] = x[partition_points[(i-2)]:partition_points[i]]
+    pts = partition_points[(i-2):i]
+    curve_details = is_wave(d_vals, pts, x)
+    if (curve_details$wave) {
+      waves[[length(waves)+1]] = curve_details
     }
   }
   return(waves)
 }
+
+f = cov_fd['Lithuania']
+waves = find_waves(x, f)
+
+f_values = eval.fd(x, f)
+plot(f)
+for (i in 1:length(waves)) {
+  xx = waves[[i]]$x
+  #if (waves[[i]]$form > 0 & waves[[i]]$form < 2) {
+  y = eval.fd(xx, f)
+  lines(xx, y, col='red')
+  segments(min(xx), y[1], max(xx), y[length(xx)], col='blue')
+  abline(v=min(xx), col='gray')
+  abline(v=max(xx), col='gray')
+  #}
+}
+
+
+plot(log(eval.fd(waves[[2]]$x, f)), type='l')
