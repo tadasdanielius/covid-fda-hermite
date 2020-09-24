@@ -1,3 +1,8 @@
+source('common.R')
+source('jhu_data.R')
+library(pvar)
+
+
 incompatible_curves = c(42, 43, 103, 184, 86)
 
 cov_data = normalized[-incompatible_curves,]
