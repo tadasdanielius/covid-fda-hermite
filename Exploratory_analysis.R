@@ -301,18 +301,27 @@ dev.off()
 
 
 ##################################################################################
-exploratory_plot <- function(to_plot){
-#to_plot <- cases_data
+#
+outliers_table <- data.frame(Region=character(),
+                            Outliers=character(),
+                            Indicator=character(),
+                            stringsAsFactors=FALSE)
+
+exploratory_plot <- function(to_plot, region_i, indicator_i){
+# to_plot <- cases_data_c
+# region_i <- regions[which_c]
+# indicator_i <- type[u]
+to_plot <- ifelse(to_plot<0,0,to_plot)
 x <- seq(-2,2,length=dim(to_plot)[1])
 fd_var <- Data2fd(x, to_plot, wbasis)
 fdata_var <- fdata(fd_var, argvals = x)
 #depths
-fmd = depth.FM(fdata_var,draw=F)
+#fmd = depth.FM(fdata_var,draw=F)
 md =  depth.mode(fdata_var)
-rpd = depth.RP(fdata_var, nproj = 50)
-cur <- c(fmd$lmed, md$lmed, rpd$lmed)
+#rpd = depth.RP(fdata_var, nproj = 50)
+cur <- c(md$lmed)
 matplot(to_plot,col="grey", type="l", cex.axis=0.9, xaxt='n',yaxt='n', xlab="Date", ylab="Cases per 100,000")
-matlines(to_plot[,cur], lwd = 2, lty = c(2,4,5) , col = c("chocolate1","navy", "green3" ))
+matlines(to_plot[,cur], lwd = 2, lty = c(2) , col = c("green3" ))
 date_labels <- unique(format(seq(as.Date("2020-01-22",format="%Y-%m-%d"),
                                  by=1, length.out=dim(to_plot)[1]), '%b'))
 date_at <- which(seq(as.Date("2020-01-22",format="%Y-%m-%d"),
@@ -327,63 +336,92 @@ axis(side = 2, at = y_at_grid, labels = y_at_grid, tck = -0.03, cex.axis=0.8, la
 mean_var <- rowMeans(to_plot)
 matlines(mean_var, type="l", lwd=2)
 #outliers
-out2<-outliers.depth.pond(fdata_var,nb=100,dfunc=depth.FM)$outliers
+out2<-outliers.depth.pond(fdata_var,nb=100,dfunc=depth.mode)$outliers
 matlines(to_plot[,out2], lwd = 2, lty = 2 , col = "red")
 #to_plot_out <- to_plot[,-which(colnames(to_plot) %in% out2)]
 #matplot(to_plot_out, lwd = 2, lty = 2 , col = "lightgrey", type="l")
 
 matlines(t(sqrt(func.var(fdata_var))$data), col = "black", lwd = 2, lty = 2)
 
-add_legend("topleft", c(paste("Integrated Depth: the deepest function = ",names(cur)[1],".",sep=""),
-                        paste("Modal depth: the deepest function = ",names(cur)[2],".",sep=""),
-                        paste("Random Projection depth: the deepest function = ",names(cur)[3],".",sep=""),
+add_legend("topleft", c("Mean function",
+                        "Standard deviation",
+                        #paste("Integrated Depth: the deepest function = ",names(cur)[1],".",sep=""),
+                        paste("Modal depth: the deepest function = ",names(cur)[1],".",sep=""),
+                        #paste("Random Projection depth: the deepest function = ",names(cur)[3],".",sep=""),
                        "Outliers"), 
-           lwd = 2, lty = c(2,4,5,2) ,col = c("chocolate1","navy", "green3", "red"), 
-           cex=0.7, bty="n")
-add_legend("topright", c("Mean function",
-                         "Standard deviation"), 
-           lwd = 2, lty = c(1,2) ,col = c("black", "black"), 
-           cex=0.7, bty="n")
+           lwd = 2, lty = c(1,2,2,2) ,col = c("black", "black", "green3", "red"), 
+           cex=0.85, bty="n")
+# add_legend("topright", c("Mean function",
+#                          "Standard deviation"), 
+#            lwd = 2, lty = c(1,2) ,col = c("black", "black"), 
+#            cex=0.7, bty="n")
 
-print(paste("Outliers:"))
+print(paste(indicator_i, region_i , "Outliers:"))
 print(out2)
-to_write <- c("","cases",regions[which_c],out2)
+
+if(length(out2)!=0){
+  new_rows <- as.data.frame(cbind(region_i, out2, indicator_i))
+  colnames(new_rows) <- names(outliers_table)
+}else{
+  new_rows <- as.data.frame(cbind(region_i, "none", indicator_i))
+  colnames(new_rows) <- names(outliers_table)
+}
 filename <- paste(path_to_write,"exploratory_plots/outliers.csv", sep="")
 if(is.na(file.info(filename)$size)){
-  write.csv(to_write, 
+  write.csv(new_rows,
             filename)
 }else{
-  write.table(to_write, 
-              filename, 
-              sep = ",", 
+  write.table(new_rows,
+              filename,
+              sep = ",",
               col.names = !file.exists(filename), append = T)
 }
+
 }
 #############################################################################
 
-
+type <- c("cases_data","recov_data","closed_data")
 #Mean, Depths, Outliers functions
-file_path <- paste(path_to_write,"exploratory_plots/closed_all.pdf", sep="")
+for(y in 1:3){
+file_path <- paste(path_to_write,"exploratory_plots/",type[y],"_all.pdf", sep="")
 pdf(file_path, width=8, height=5)
-exploratory_plot(closed_data)
+exploratory_plot(get(type[y]), "all", type[y])
 dev.off()
-
-exploratory_plot(recov_data)
-exploratory_plot(closed_data)
+}
 
 
 #Regions
-#which_c <- 1
+which_c <- 2
+type <- c("cases_data","recov_data","closed_data")
+u=2
 for (which_c in 1:5){
-  which_type <- cases_data
+  for(u in 1:3){
+  which_type <- get(type[u])
   countries_in_c <- Countries_info[which(Countries_info$region %in% regions[which_c]),5]
   cases_data_c <- which_type[,which(colnames(which_type) %in% countries_in_c)]
-  file_path <- paste(path_to_write,"exploratory_plots/cases_",regions[which_c],".pdf", sep="")
+  file_path <- paste(path_to_write,"exploratory_plots/",type[u],"_",regions[which_c],".pdf", sep="")
   pdf(file_path, width=8, height=5)
-  exploratory_plot(cases_data_c)
+  exploratory_plot(cases_data_c, regions[which_c], type[u])
   dev.off()
-}
+  
+  # to_plot <- to_plot
+  # to_plot <- ifelse(to_plot<0,0,to_plot)
+  # x <- seq(-2,2,length=dim(to_plot)[1])
+  # fd_var <- Data2fd(x, to_plot, wbasis)
+  # fdata_var <- fdata(fd_var, argvals = x)
+  # out2<-outliers.depth.pond(fdata_var,nb=100,dfunc=depth.mode)$outliers
+  # if(length(out2)!=0){
+  #   new_rows <- as.data.frame(cbind(regions[which_c], out2, type[u]))
+  #   colnames(new_rows) <- names(outliers_table)
+  #   outliers_table <- rbind(outliers_table, new_rows)
+  # }else{
+  #   new_rows <- as.data.frame(cbind(regions[which_c], "none", type[u]))
+  #   colnames(new_rows) <- names(outliers_table)
+  #   outliers_table <- rbind(outliers_table, new_rows)
+  # }
 
+}
+}
 #############################################################################
 
 
@@ -429,7 +467,12 @@ which_type <- closed_data
 countries_in_c <- Countries_info[which(Countries_info$region %in% regions[which_c]),5]
 cases_data_c <- which_type[,which(colnames(which_type) %in% countries_in_c)]
 
-fd_cases_EU <- Data2fd(x, cases_data_c, wbasis)
+countries_in_out <- c("San Marino")
+cases_data_c_wo <- cases_data_c[,-which(colnames(cases_data_c) %in% countries_in_out)]
+
+
+
+fd_cases_EU <- Data2fd(x, cases_data_c_wo, wbasis)
 
 pca_var <- pca.fd(fd_cases_EU, nharm=3, centerfns=T)
 print(pca_var$varprop)
