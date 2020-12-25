@@ -18,6 +18,7 @@ source('hermite.R')
 source('getbasismat.R')
 source('hermitepen.R')
 source('eval.penalty.R')
+source('smooth.monotone.R')
 
 get_country_data <- function(country, dat) {
   y = dat[dat['Country.Region'] == country]
@@ -48,3 +49,6 @@ assign("basisfd", basisfd, getNamespace('fda'))
 
 unlockBinding("eval.penalty", getNamespace('fda'))
 assign("eval.penalty", eval.penalty, getNamespace('fda'))
+
+unlockBinding('fngrad.smooth.monotone', getNamespace('fda'))
+assign('fngrad.smooth.monotone', fngrad.smooth.monotone, getNamespace('fda'))
