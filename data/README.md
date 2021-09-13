@@ -30,3 +30,9 @@ Stored in [`data_import.R`](data_import.R)
 * `vacc_norm_countries`: total number of people who received at least one vaccine dose per 100,000 inhabitants for 193 countries.
 * `vacc_norm_world`: total number of people who received at least one vaccine dose per 100,000 inhabitants of a world.
 * `vacc_norm_continents`: total number of people who received at least one vaccine dose per 100,000 inhabitants for 6 continents. 
+* `vacc_US_states`: total number of people who received at least one vaccine dose for 56 states or territories of US.
+* `vacc_norm_US_states`: total number of people who received at least one vaccine dose per 100,000 inhabitants for 56 states or territories of US.
+* `cases_US_states`: total confirmed cases of COVID-19 for 56 states or territories of US.
+* `cases_norm_US_states`: total confirmed cases of COVID-19 per 100,000 inhabitants for 56 states or territories of US.
+* `deaths_US_states`: total deaths attributed to COVID-19 for 56 states or territories of US.
+* `deaths_norm_US_states`: total deaths attributed to COVID-19 per 100,000 inhabitants for 56 states or territories of US.
