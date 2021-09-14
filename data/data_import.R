@@ -43,7 +43,7 @@ long_to_wide <- function(long_table, column_value){
 cases_per_pop = 100000
 
 pop_table_owid <- as.data.frame(data.table::fread("https://raw.githubusercontent.com/owid/covid-19-data/master/scripts/input/un/population_2020.csv"))
-head(pop_table_owid)
+# head(pop_table_owid)
 
 pop <- pop_table_owid[, c("entity","population")]
 colnames(pop)[1] <- "location"
@@ -55,7 +55,7 @@ continents <- c("Africa", "Asia", "Europe", "North America", "South America", "O
 
 #>>>>>>>> Vaccinated <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 vac_table_owid <- as.data.frame(data.table::fread("https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/vaccinations.csv"))
-head(vac_table_owid)
+# head(vac_table_owid)
 
 vac_table_owid$people_vaccinated <- as.numeric(vac_table_owid$people_vaccinated)
 
@@ -77,21 +77,50 @@ vac_table_C <- vac_table_owid[which(!(vac_table_owid$location %in% not_countries
 # [vaccinated countries]
 vac_tmp <- vac_table_C[,c("people_vaccinated", "location", "date")]
 vacc_countries <- long_to_wide(vac_tmp, "people_vaccinated")
+
+
+
+take_out <- c()
+for(cn_i in 1:length(rownames(vacc_countries))){
+  tmp_tab = data.frame(t(vacc_countries[cn_i,]))
+  cond = length(which(is.na(tmp_tab[,1]))[which(is.na(tmp_tab[,1])) > which.max(!is.na(tmp_tab[,1]))])
+  if(cond < 4){
+  vacc_countries[cn_i,] <- nafill(tmp_tab, type = "locf")[[1]]}else{
+    take_out <- c(take_out, cn_i)
+  }
+}
+vacc_countries <- vacc_countries[-take_out,]
+vacc_countries[is.na(vacc_countries)] <- 0
+
 # matplot(t(vacc_countries), type="l")
 
 
-vacc_countries[which(vacc_countries$`2021-09-07` %in% max(na.omit(vacc_countries$`2021-09-07`))),]
+# vacc_countries[which(vacc_countries$`2021-09-07` %in% max(na.omit(vacc_countries$`2021-09-07`))),]
 
 ##### Per 1000,000 inhabitants ######
 # [vaccinated countries per 100,000 inhabitant]
 vac_tmp_norm <- vac_table_C[,c("vacc_normalized", "location", "date")]
 vacc_norm_countries <- long_to_wide(vac_tmp_norm, "vacc_normalized")
+
+
+take_out <- c()
+for(cn_i in 1:length(rownames(vacc_norm_countries))){
+  tmp_tab = data.frame(t(vacc_norm_countries[cn_i,]))
+  cond = length(which(is.na(tmp_tab[,1]))[which(is.na(tmp_tab[,1])) > which.max(!is.na(tmp_tab[,1]))])
+  if(cond < 4){
+    vacc_norm_countries[cn_i,] <- nafill(tmp_tab, type = "locf")[[1]]}else{
+      take_out <- c(take_out, cn_i)
+    }
+}
+vacc_norm_countries <- vacc_norm_countries[-take_out,]
+vacc_norm_countries[is.na(vacc_norm_countries)] <- 0
+
 # matplot(t(vacc_norm_countries), type="l")
 
 #100% vaccinated
-vacc_norm_countries[which(vacc_norm_countries$`2021-09-07` %in% max(na.omit(vacc_norm_countries$`2021-09-07`))),]
+# vacc_norm_countries[which(vacc_norm_countries$`2021-09-07` %in% max(na.omit(vacc_norm_countries$`2021-09-07`))),]
 #Gibraltar exceeds 100% due to vaccination of non-residents
-vacc_norm_countries[which(vacc_norm_countries$`2021-09-01` %in% max(na.omit(vacc_norm_countries$`2021-09-01`))),]
+# vacc_norm_countries[which(vacc_norm_countries$`2021-09-01` %in% max(na.omit(vacc_norm_countries$`2021-09-01`))),]
 
 
 ##### Totals ######
@@ -116,7 +145,7 @@ vacc_continents[is.na(vacc_continents)] <- 0
 # matplot(t(vacc_continents), type="l")
 
 #Asia (data for China added onJun 10, Aug 12, Aug 26)
-vacc_continents[which(vacc_continents$`2021-09-07` %in% max(na.omit(vacc_continents$`2021-09-07`))),]
+# vacc_continents[which(vacc_continents$`2021-09-07` %in% max(na.omit(vacc_continents$`2021-09-07`))),]
 
 
 ##### Per 1000,000 inhabitants ######
@@ -133,7 +162,7 @@ vacc_norm_continents[is.na(vacc_norm_continents)] <- 0
 
 # >>>>>>>>>>>>>>  Confirmed cases <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 cases_table_owid <- as.data.frame(data.table::fread("https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/jhu/total_cases.csv"))
-head(cases_table_owid)
+# head(cases_table_owid)
 
 
 # <<<<<<<<<<<<<< TOTALS >>>>>>>>>>>>>>>>>>>>>>>>
@@ -157,6 +186,7 @@ cases_world <- t(cases_world0[,-which(colnames(cases_world0)  %in% "date")])
 colnames(cases_world) <- as.character(cases_world0$date)
 rownames(cases_world) <- colnames(cases_world0)[2]
 cases_world <- as.data.frame(cases_world)
+cases_world[is.na(cases_world)] <- 0
 # matplot(t(cases_world), type="l")
 
 
@@ -165,6 +195,7 @@ cases_cont <- cases_table_owid[,c("date",continents)]
 cases_continents <- t(cases_cont[,-which(colnames(cases_cont)  %in% "date")])
 colnames(cases_continents) <- as.character(cases_cont$date)
 cases_continents <- as.data.frame(cases_continents)
+cases_continents[is.na(cases_continents)] <- 0
 # matplot(t(cases_continents), type="l")
 
 
@@ -199,13 +230,14 @@ cases_cont$cases_norm <- cases_cont$cases / (cases_cont$population/cases_per_pop
 cases_cont <- cases_cont[order(cases_cont$location, cases_cont$date),]
 cases_cont <- cases_cont[,c("location", "date", "cases_norm")]
 cases_norm_continents <- long_to_wide(cases_cont, "cases_norm")
+cases_norm_continents[is.na(cases_norm_continents)] <- 0
 # matplot(t(cases_norm_continents), type="l")
 
 
 
 # >>>>>>>>>>>>>  Death cases <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 deaths_table_owid <- as.data.frame(data.table::fread("https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/jhu/total_deaths.csv"))
-head(deaths_table_owid)
+# head(deaths_table_owid)
 
 
 # <<<<<<<<<<<<<< TOTALS >>>>>>>>>>>>>>>>>>>>>>>>
@@ -244,6 +276,7 @@ pop_vac <- merge(tmp_vacc, pop, by=("location"), all.x=T)
 
 deaths_norm_countries <-  pop_vac[, 2:(dim(pop_vac)[2]-1) ] / (pop_vac$population/cases_per_pop)
 rownames(deaths_norm_countries) <- pop_vac$location
+deaths_norm_countries[is.na(deaths_norm_countries)] <- 0
 # matplot(t(deaths_norm_countries), type="l")
 
 
@@ -267,6 +300,7 @@ deaths_cont$cases_norm <- deaths_cont$cases / (deaths_cont$population/cases_per_
 deaths_cont <- deaths_cont[order(deaths_cont$location, deaths_cont$date),]
 deaths_cont <- deaths_cont[,c("location", "date", "cases_norm")]
 deaths_norm_continents <- long_to_wide(deaths_cont, "cases_norm")
+deaths_norm_continents[is.na(deaths_norm_continents)] <- 0
 # matplot(t(deaths_norm_continents), type="l")
 
 
@@ -295,7 +329,7 @@ pop_US$location[which(pop_US$location %in% "New York")] <- "New York State"
 
 #vaccinations US states 
 vacUS_table_owid <- as.data.frame(data.table::fread("https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/us_state_vaccinations.csv"))
-head(vacUS_table_owid)
+# head(vacUS_table_owid)
 
 vacUS_table_owid <- vacUS_table_owid[,c("location", "date", "people_vaccinated")]
 vacUS_table_owid$people_vaccinated <- as.numeric(vacUS_table_owid$people_vaccinated)
@@ -329,7 +363,7 @@ vacc_US_states <- vacc_US_states[which(rownames(vacc_US_states) %in% rownames(va
 #>>>>>>>> Cases US<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 casesUS_table_owid <- as.data.frame(data.table::fread("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv"))
-head(casesUS_table_owid)
+# head(casesUS_table_owid)
 
 # casesUS_table_owid[,c("Admin2","Province_State", "Country_Region")]
 
@@ -376,7 +410,7 @@ cases_US_states <- cases_US_states[,-which(colnames(cases_US_states) %in% "locat
 
 
 deathsUS_table <- as.data.frame(data.table::fread("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_US.csv"))
-head(deathsUS_table)
+# head(deathsUS_table)
 
 
 
@@ -407,7 +441,8 @@ rownames(deaths_US_states)[which(rownames(deaths_US_states) %in% "New York")] <-
 deaths_norm_US_states <-  deaths_US_states[, 2:(dim(deaths_US_states)[2]) ] / (deaths_US_states$population/cases_per_pop)
 rownames(deaths_norm_US_states) <- rownames(deaths_US_states)
 deaths_norm_US_states <- as.data.frame(deaths_norm_US_states)
-
+deaths_norm_US_states <- deaths_norm_US_states[-which(rownames(deaths_norm_US_states) %in% "Grand Princess"),]
+deaths_norm_US_states[is.na(deaths_norm_US_states)] <- 0
 # matplot(t(deaths_norm_US_states), type="l")
 
 #remove "population" column
